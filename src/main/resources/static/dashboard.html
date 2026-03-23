@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page">
+  <div class="container">
+    <nav class="navbar">
+      <div class="brand">Smart Parking</div>
+      <div class="nav-links">
+        <a href="browse-spots.html">Browse Spots</a>
+        <a href="my-bookings.html">My Bookings</a>
+        <a href="admin-panel.html">Admin</a>
+        <a class="danger-link" href="#" onclick="logout()">Logout</a>
+      </div>
+    </nav>
+
+    <section class="card">
+      <h1 class="page-title">Welcome, <span id="userDisplay">User</span></h1>
+      <p class="subtle">Overview of your parking activity and current availability.</p>
+
+      <div class="grid stats-grid section">
+        <div class="stat-card">
+          <h3 id="availableSlots">0</h3>
+          <p>Available spots</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="activeBookings">0</h3>
+          <p>Active bookings</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="totalSpent">$0.00</h3>
+          <p>Total spend</p>
+        </div>
+      </div>
+
+      <div class="actions section">
+        <button class="btn btn-primary" onclick="goTo('browse-spots.html')">Find a spot</button>
+        <button class="btn btn-secondary" onclick="goTo('my-bookings.html')">View bookings</button>
+        <button class="btn btn-success" onclick="checkSpots()">Check availability</button>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2 class="page-title" style="font-size:1.2rem;">Recent bookings</h2>
+      <ul class="list section" id="bookingsList">
+        <li class="list-item">Loading bookings...</li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    function goTo(url) {
+      window.location.href = url;
+    }
+
+    async function loadDashboard() {
+      const userId = sessionStorage.getItem('userId');
+      const username = sessionStorage.getItem('username');
+      
+      if (!userId) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      document.getElementById('userDisplay').textContent = username || 'User';
+      
+      // Load available spots
+      try {
+        const spotsResponse = await fetch('/api/parking/spots/available');
+        const spots = await spotsResponse.json();
+        document.getElementById('availableSlots').textContent = spots.length;
+      } catch(e) {
+        console.error(e);
+      }
+
+      // Load user bookings
+      try {
+        const bookingsResponse = await fetch(`/api/reservations/user/${userId}`);
+        const bookings = await bookingsResponse.json();
+        
+        const bookingsList = document.getElementById('bookingsList');
+        bookingsList.innerHTML = '';
+        
+        if (bookings.length === 0) {
+          bookingsList.innerHTML = '<li class="list-item">No bookings yet.</li>';
+        } else {
+          bookings.forEach(booking => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.innerHTML = `
+              <strong>Spot #${booking.spotId}</strong> · ${booking.status}<br>
+              Payment: ${booking.paymentStatus || 'PENDING'}<br>
+              Total: $${Number(booking.totalPrice || 0).toFixed(2)}
+            `;
+            bookingsList.appendChild(li);
+          });
+          document.getElementById('activeBookings').textContent = bookings.filter(b => b.status === 'ACTIVE').length;
+          document.getElementById('totalSpent').textContent = '$' + bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0).toFixed(2);
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    async function checkSpots() {
+      try {
+        const response = await fetch('/api/parking/spots');
+        const spots = await response.json();
+        const available = spots.filter(s => !s.reserved).length;
+        alert(`Available parking spaces: ${available} out of ${spots.length}`);
+      } catch (error) {
+        alert('Error checking spots');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

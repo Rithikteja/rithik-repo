@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - Browse Spots</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page">
+  <div class="container">
+    <nav class="navbar">
+      <div class="brand">Smart Parking</div>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="my-bookings.html">My Bookings</a>
+        <a class="danger-link" href="#" onclick="logout()">Logout</a>
+      </div>
+    </nav>
+
+    <section class="card">
+      <h1 class="page-title">Browse Parking Spots</h1>
+      <p class="subtle">Filter by spot type or availability, then reserve instantly.</p>
+
+      <div class="grid section" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+        <div>
+          <label for="spotTypeFilter">Spot type</label>
+          <select id="spotTypeFilter" onchange="loadSpots()">
+            <option value="">All types</option>
+            <option value="STANDARD">Standard</option>
+            <option value="COMPACT">Compact</option>
+            <option value="HANDICAP">Handicap</option>
+          </select>
+        </div>
+        <div>
+          <label for="availabilityFilter">Availability</label>
+          <select id="availabilityFilter" onchange="loadSpots()">
+            <option value="">All</option>
+            <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="spots-grid" id="spotsContainer">
+        <div class="list-item">Loading parking spots...</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const userId = sessionStorage.getItem('userId');
+
+    async function loadSpots() {
+      if (!userId) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/parking/spots');
+        let spots = await response.json();
+
+        const spotType = document.getElementById('spotTypeFilter').value;
+        const availability = document.getElementById('availabilityFilter').value;
+
+        if (spotType) spots = spots.filter(s => s.spotType === spotType);
+        if (availability === 'available') spots = spots.filter(s => !s.reserved);
+        if (availability === 'reserved') spots = spots.filter(s => s.reserved);
+
+        const container = document.getElementById('spotsContainer');
+        container.innerHTML = '';
+
+        if (spots.length === 0) {
+          container.innerHTML = '<div class="list-item">No spots match your filters.</div>';
+          return;
+        }
+
+        spots.forEach(spot => {
+          const isReserved = !!spot.reserved;
+          const card = document.createElement('article');
+          card.className = 'spot-card' + (isReserved ? ' reserved' : '');
+          card.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <strong>Spot #${spot.spotNumber}</strong>
+              <span class="badge ${isReserved ? 'reserved' : 'available'}">${isReserved ? 'Reserved' : 'Available'}</span>
+            </div>
+            <p class="subtle" style="margin-top:10px;margin-bottom:6px;">Type: ${spot.spotType || 'STANDARD'}</p>
+            <p class="subtle" style="margin:0 0 10px;">Location: ${spot.location || 'Level 1'}</p>
+            <p style="margin:0 0 12px;font-weight:700;color:#1e3a8a;">$${Number(spot.pricePerHour || 0).toFixed(2)} / hour</p>
+            <button class="btn ${isReserved ? 'btn-secondary' : 'btn-primary'}" style="width:100%" ${isReserved ? 'disabled' : ''}
+              onclick="bookSpot(${spot.id})">
+              ${isReserved ? 'Unavailable' : 'Reserve Now'}
+            </button>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        console.error(error);
+        document.getElementById('spotsContainer').innerHTML = '<div class="list-item">Error loading spots.</div>';
+      }
+    }
+
+    async function bookSpot(spotId) {
+      if (!confirm('Proceed with reservation?')) return;
+
+      try {
+        const response = await fetch('/api/reservations/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: parseInt(userId, 10),
+            spotId,
+            startTime: new Date().toISOString(),
+            endTime: new Date(Date.now() + 3600000).toISOString()
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert('Reservation successful.');
+          loadSpots();
+        } else {
+          alert('Booking failed: ' + (data.message || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Error booking spot.');
+      }
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    loadSpots();
+  </script>
+</body>
+</html>

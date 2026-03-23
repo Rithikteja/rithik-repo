@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - My Bookings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page">
+  <div class="container">
+    <nav class="navbar">
+      <div class="brand">Smart Parking</div>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="browse-spots.html">Browse Spots</a>
+        <a class="danger-link" href="#" onclick="logout()">Logout</a>
+      </div>
+    </nav>
+
+    <section class="card">
+      <h1 class="page-title">My Reservations</h1>
+      <p class="subtle">Track reservation status, payments, and cancellations.</p>
+      <div class="tabs section">
+        <button class="tab-btn active" onclick="filterBookings('all', this)">All</button>
+        <button class="tab-btn" onclick="filterBookings('ACTIVE', this)">Active</button>
+        <button class="tab-btn" onclick="filterBookings('COMPLETED', this)">Completed</button>
+        <button class="tab-btn" onclick="filterBookings('CANCELLED', this)">Cancelled</button>
+      </div>
+    </section>
+
+    <section class="card section" id="bookingsContainer">
+      <div class="list-item">Loading your bookings...</div>
+    </section>
+  </div>
+
+  <script>
+    const userId = sessionStorage.getItem('userId');
+    let allBookings = [];
+    let currentFilter = 'all';
+
+    async function loadBookings() {
+      if (!userId) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/reservations/user/${userId}`);
+        allBookings = await response.json();
+        displayBookings();
+      } catch (error) {
+        document.getElementById('bookingsContainer').innerHTML = '<div class="list-item">Error loading bookings.</div>';
+      }
+    }
+
+    function filterBookings(status, button) {
+      currentFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+      displayBookings();
+    }
+
+    function displayBookings() {
+      const container = document.getElementById('bookingsContainer');
+      const filtered = currentFilter === 'all'
+        ? allBookings
+        : allBookings.filter(b => b.status === currentFilter);
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="list-item">No bookings found for this filter.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(booking => {
+        const statusClass = (booking.status || '').toLowerCase();
+        return `
+          <div class="list-item">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <strong>Spot #${booking.spotId}</strong>
+              <span class="badge ${statusClass || 'active'}">${booking.status || 'ACTIVE'}</span>
+            </div>
+            <p class="subtle" style="margin:8px 0 4px;">Start: ${booking.startTime ? new Date(booking.startTime).toLocaleString() : '-'}</p>
+            <p class="subtle" style="margin:0 0 4px;">End: ${booking.endTime ? new Date(booking.endTime).toLocaleString() : '-'}</p>
+            <p class="subtle" style="margin:0 0 8px;">Payment: ${booking.paymentStatus || 'PENDING'}</p>
+            <p style="margin:0 0 12px;font-weight:700;">Total: $${Number(booking.totalPrice || 0).toFixed(2)}</p>
+            ${booking.status === 'ACTIVE' ? `
+              <div class="actions">
+                <button class="btn btn-success" onclick="completePayment(${booking.id})">Pay Now</button>
+                <button class="btn btn-danger" onclick="cancelBooking(${booking.id})">Cancel</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function cancelBooking(bookingId) {
+      if (!confirm('Cancel this booking?')) return;
+
+      try {
+        const response = await fetch(`/api/reservations/${bookingId}/cancel`, { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+          alert('Booking cancelled.');
+          loadBookings();
+        } else {
+          alert('Could not cancel booking.');
+        }
+      } catch (error) {
+        alert('Could not cancel booking.');
+      }
+    }
+
+    function completePayment(bookingId) {
+      sessionStorage.setItem('bookingId', bookingId);
+      window.location.href = 'payment.html';
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    loadBookings();
+  </script>
+</body>
+</html>

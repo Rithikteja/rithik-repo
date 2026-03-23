@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - Admin Panel</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page">
+  <div class="container">
+    <nav class="navbar">
+      <div class="brand">Smart Parking Admin</div>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="browse-spots.html">Browse</a>
+        <a class="danger-link" href="#" onclick="logout()">Logout</a>
+      </div>
+    </nav>
+
+    <section class="card">
+      <h1 class="page-title">Administration</h1>
+      <p class="subtle">Manage parking spots, users, reservations, and platform metrics.</p>
+      <div class="tabs section">
+        <button class="tab-btn active" onclick="showTab('spots', this)">Spots</button>
+        <button class="tab-btn" onclick="showTab('users', this)">Users</button>
+        <button class="tab-btn" onclick="showTab('reservations', this)">Reservations</button>
+        <button class="tab-btn" onclick="showTab('stats', this)">Stats</button>
+      </div>
+    </section>
+
+    <section id="spots" class="card section tab-content active">
+      <div class="grid stats-grid" id="spotStats"></div>
+      <div class="section"><button class="btn btn-primary" onclick="openAddSpotModal()">Add Spot</button></div>
+      <div class="table-wrap section">
+        <table>
+          <thead>
+            <tr><th>Spot</th><th>Location</th><th>Type</th><th>Rate</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody id="spotsList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="users" class="card section tab-content">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Username</th><th>Email</th><th>Phone</th><th>Verified</th><th>Created</th><th>Action</th></tr>
+          </thead>
+          <tbody id="usersList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="reservations" class="card section tab-content">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>User</th><th>Spot</th><th>Start</th><th>Total</th><th>Status</th><th>Payment</th></tr>
+          </thead>
+          <tbody id="reservationsList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="stats" class="card section tab-content">
+      <div class="grid stats-grid" id="adminStats"></div>
+      <div class="list-item section" id="statsContent"></div>
+    </section>
+  </div>
+
+  <div id="addSpotModal" class="modal">
+    <div class="modal-card">
+      <h3 style="margin:0 0 12px;">Add Parking Spot</h3>
+      <form onsubmit="addSpot(event)">
+        <div class="form-group">
+          <label for="spotNumber">Spot Number</label>
+          <input type="number" id="spotNumber" required>
+        </div>
+        <div class="form-group">
+          <label for="spotLocation">Location</label>
+          <input type="text" id="spotLocation" placeholder="Level 1" required>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label for="spotType">Type</label>
+            <select id="spotType" required>
+              <option value="STANDARD">Standard</option>
+              <option value="COMPACT">Compact</option>
+              <option value="HANDICAP">Handicap</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="spotPrice">Price/Hour</label>
+            <input type="number" id="spotPrice" step="0.01" required>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-secondary" type="button" onclick="closeAddSpotModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const userId = sessionStorage.getItem('userId');
+
+    function ensureSession() {
+      if (!userId) window.location.href = 'login.html';
+    }
+
+    function showTab(tabName, button) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      button.classList.add('active');
+
+      if (tabName === 'spots') loadSpots();
+      if (tabName === 'users') loadUsers();
+      if (tabName === 'reservations') loadReservations();
+      if (tabName === 'stats') loadStats();
+    }
+
+    async function loadSpots() {
+      const spots = await fetch('/api/parking/spots').then(r => r.json());
+      document.getElementById('spotsList').innerHTML = spots.map(spot => `
+        <tr>
+          <td>#${spot.spotNumber}</td>
+          <td>${spot.location || '-'}</td>
+          <td>${spot.spotType || 'STANDARD'}</td>
+          <td>$${Number(spot.pricePerHour || 0).toFixed(2)}</td>
+          <td>${spot.status || (spot.reserved ? 'OCCUPIED' : 'AVAILABLE')}</td>
+          <td><button class="btn btn-danger" onclick="deleteSpot(${spot.id})">Delete</button></td>
+        </tr>
+      `).join('');
+
+      const available = spots.filter(s => !s.reserved).length;
+      document.getElementById('spotStats').innerHTML = `
+        <div class="stat-card"><h3>${spots.length}</h3><p>Total spots</p></div>
+        <div class="stat-card"><h3>${available}</h3><p>Available</p></div>
+        <div class="stat-card"><h3>${spots.length - available}</h3><p>Occupied</p></div>
+      `;
+    }
+
+    async function loadUsers() {
+      const users = await fetch('/api/parking/users').then(r => r.json());
+      document.getElementById('usersList').innerHTML = users.map(user => `
+        <tr>
+          <td>${user.username}</td>
+          <td>${user.email || '-'}</td>
+          <td>${user.phone || '-'}</td>
+          <td>${user.verified ? 'Yes' : 'No'}</td>
+          <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</td>
+          <td><button class="btn btn-danger" onclick="deleteUser(${user.id})">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadReservations() {
+      const reservations = await fetch('/api/parking/reservations').then(r => r.json());
+      document.getElementById('reservationsList').innerHTML = reservations.map(r => `
+        <tr>
+          <td>#${r.id}</td>
+          <td>${r.userId}</td>
+          <td>#${r.spotId}</td>
+          <td>${r.startTime ? new Date(r.startTime).toLocaleString() : '-'}</td>
+          <td>$${Number(r.totalPrice || 0).toFixed(2)}</td>
+          <td>${r.status || '-'}</td>
+          <td>${r.paymentStatus || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadStats() {
+      const [spots, users, reservations] = await Promise.all([
+        fetch('/api/parking/spots').then(r => r.json()),
+        fetch('/api/parking/users').then(r => r.json()),
+        fetch('/api/parking/reservations').then(r => r.json())
+      ]);
+
+      const totalRevenue = reservations.reduce((sum, r) => sum + Number(r.totalPrice || 0), 0);
+      const paidCount = reservations.filter(r => r.paymentStatus === 'PAID').length;
+      const avgValue = reservations.length ? totalRevenue / reservations.length : 0;
+
+      document.getElementById('adminStats').innerHTML = `
+        <div class="stat-card"><h3>${users.length}</h3><p>Users</p></div>
+        <div class="stat-card"><h3>${reservations.length}</h3><p>Bookings</p></div>
+        <div class="stat-card"><h3>$${totalRevenue.toFixed(2)}</h3><p>Revenue</p></div>
+        <div class="stat-card"><h3>${paidCount}</h3><p>Paid bookings</p></div>
+      `;
+
+      document.getElementById('statsContent').innerHTML = `
+        <p>Active spots: ${spots.filter(s => !s.reserved).length} / ${spots.length}</p>
+        <p>Completed reservations: ${reservations.filter(r => r.status === 'COMPLETED').length}</p>
+        <p>Average booking value: $${avgValue.toFixed(2)}</p>
+      `;
+    }
+
+    function openAddSpotModal() {
+      document.getElementById('addSpotModal').classList.add('active');
+    }
+
+    function closeAddSpotModal() {
+      document.getElementById('addSpotModal').classList.remove('active');
+    }
+
+    async function addSpot(event) {
+      event.preventDefault();
+      try {
+        const response = await fetch('/api/parking/spots/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            spotNumber: parseInt(document.getElementById('spotNumber').value, 10),
+            location: document.getElementById('spotLocation').value,
+            spotType: document.getElementById('spotType').value,
+            pricePerHour: parseFloat(document.getElementById('spotPrice').value),
+            reserved: false
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          closeAddSpotModal();
+          loadSpots();
+        } else {
+          alert('Could not add spot.');
+        }
+      } catch (error) {
+        alert('Could not add spot.');
+      }
+    }
+
+    async function deleteSpot(id) {
+      if (!confirm('Delete this spot?')) return;
+      const response = await fetch(`/api/parking/spots/${id}`, { method: 'DELETE' });
+      if (response.ok) loadSpots();
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Delete this user?')) return;
+      const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (response.ok) loadUsers();
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    ensureSession();
+    loadSpots();
+  </script>
+</body>
+</html>

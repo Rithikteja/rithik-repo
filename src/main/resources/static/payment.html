@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - Payment</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="auth-wrap">
+    <main class="auth-card" style="max-width:480px;">
+      <h1>Payment</h1>
+      <p>Confirm payment for your reservation.</p>
+
+      <div class="list-item">
+        <div style="display:flex;justify-content:space-between;">
+          <span class="subtle">Booking ID</span>
+          <strong id="bookingId">-</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span class="subtle">Amount</span>
+          <strong id="amount">$0.00</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span class="subtle">Status</span>
+          <strong id="status">PENDING</strong>
+        </div>
+      </div>
+
+      <form id="paymentForm" class="section" onsubmit="processPayment(event)">
+        <div class="form-group">
+          <label for="cardNumber">Card Number</label>
+          <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" required>
+        </div>
+        <div class="form-group">
+          <label for="cardName">Cardholder Name</label>
+          <input type="text" id="cardName" placeholder="Name on card" required>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label for="expiry">Expiry (MM/YY)</label>
+            <input type="text" id="expiry" placeholder="12/27" maxlength="5" required>
+          </div>
+          <div class="form-group">
+            <label for="cvv">CVV</label>
+            <input type="text" id="cvv" placeholder="123" maxlength="3" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Pay Now</button>
+      </form>
+
+      <p class="helper">Demo card: 4111 1111 1111 1111</p>
+      <div class="helper"><a href="my-bookings.html">Back to bookings</a></div>
+    </main>
+  </section>
+
+  <script>
+    const bookingId = sessionStorage.getItem('bookingId');
+    const userId = sessionStorage.getItem('userId');
+
+    async function loadBookingDetails() {
+      if (!bookingId || !userId) {
+        window.location.href = 'my-bookings.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/reservations/${bookingId}`);
+        const booking = await response.json();
+        document.getElementById('bookingId').textContent = booking.id || '-';
+        document.getElementById('amount').textContent = '$' + Number(booking.totalPrice || 0).toFixed(2);
+        document.getElementById('status').textContent = booking.paymentStatus || 'PENDING';
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function processPayment(event) {
+      event.preventDefault();
+      const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+      const expiry = document.getElementById('expiry').value;
+      const cvv = document.getElementById('cvv').value;
+
+      if (cardNumber.length !== 16) return alert('Invalid card number.');
+      if (!/^\d{2}\/\d{2}$/.test(expiry)) return alert('Use MM/YY format.');
+      if (cvv.length !== 3) return alert('Invalid CVV.');
+
+      const btn = event.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      setTimeout(() => {
+        sessionStorage.setItem('paymentStatus', 'PAID');
+        alert('Payment successful.');
+        window.location.href = 'my-bookings.html';
+      }, 1500);
+    }
+
+    document.getElementById('cardNumber').addEventListener('input', (e) => {
+      const value = e.target.value.replace(/\s/g, '').slice(0, 16);
+      e.target.value = value.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    document.getElementById('expiry').addEventListener('input', (e) => {
+      let value = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
+      if (value.length > 2) value = value.slice(0, 2) + '/' + value.slice(2);
+      e.target.value = value;
+    });
+
+    loadBookingDetails();
+  </script>
+</body>
+</html>
