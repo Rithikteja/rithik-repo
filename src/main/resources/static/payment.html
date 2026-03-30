@@ -68,6 +68,13 @@
   </section>
 
   <script>
+    // ============================================
+    // API Configuration - Update for deployment
+    // ============================================
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:8080'
+      : 'https://rithik-repo.onrender.com';
+
     const bookingId = sessionStorage.getItem('bookingId');
     const userId = sessionStorage.getItem('userId');
 
@@ -78,7 +85,7 @@
       }
 
       try {
-        const response = await fetch(`/api/reservations/${bookingId}`);
+        const response = await fetch(`${API_BASE_URL}/api/reservations/${bookingId}`);
         const booking = await response.json();
         document.getElementById('bookingId').textContent = booking.id || '-';
         document.getElementById('amount').textContent = '$' + Number(booking.totalPrice || 0).toFixed(2);
@@ -103,7 +110,7 @@
       btn.textContent = 'Processing...';
 
       try {
-        const response = await fetch(`/api/reservations/${bookingId}/pay`, {
+        const response = await fetch(`${API_BASE_URL}/api/reservations/${bookingId}/pay`, {
           method: 'POST'
         });
         const data = await response.json();

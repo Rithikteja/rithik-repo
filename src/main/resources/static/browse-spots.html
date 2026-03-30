@@ -50,6 +50,13 @@
   </div>
 
   <script>
+    // ============================================
+    // API Configuration - Update for deployment
+    // ============================================
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:8080'
+      : 'https://rithik-repo.onrender.com';
+
     const userId = sessionStorage.getItem('userId');
 
     async function loadSpots() {
@@ -59,7 +66,7 @@
       }
 
       try {
-        const response = await fetch('/api/parking/spots');
+        const response = await fetch(`${API_BASE_URL}/api/parking/spots`);
         let spots = await response.json();
 
         const spotType = document.getElementById('spotTypeFilter').value;
@@ -106,7 +113,7 @@
       if (!confirm('Proceed with reservation?')) return;
 
       try {
-        const response = await fetch('/api/reservations/create', {
+        const response = await fetch(`${API_BASE_URL}/api/reservations/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

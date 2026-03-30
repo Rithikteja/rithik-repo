@@ -34,6 +34,13 @@
   </div>
 
   <script>
+    // ============================================
+    // API Configuration - Update for deployment
+    // ============================================
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:8080'
+      : 'https://rithik-repo.onrender.com';
+
     const userId = sessionStorage.getItem('userId');
     let allBookings = [];
     let currentFilter = 'all';
@@ -45,7 +52,7 @@
       }
 
       try {
-        const response = await fetch(`/api/reservations/user/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/reservations/user/${userId}`);
         allBookings = await response.json();
         displayBookings();
       } catch (error) {
@@ -98,7 +105,7 @@
       if (!confirm('Cancel this booking?')) return;
 
       try {
-        const response = await fetch(`/api/reservations/${bookingId}/cancel`, { method: 'POST' });
+        const response = await fetch(`${API_BASE_URL}/api/reservations/${bookingId}/cancel`, { method: 'POST' });
         const data = await response.json();
         if (data.success) {
           alert('Booking cancelled.');

@@ -53,6 +53,13 @@
   </div>
 
   <script>
+    // ============================================
+    // API Configuration - Update for deployment
+    // ============================================
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:8080'
+      : 'https://rithik-repo.onrender.com';
+
     function logout() {
       sessionStorage.clear();
       window.location.href = 'login.html';
@@ -75,7 +82,7 @@
       
       // Load available spots
       try {
-        const spotsResponse = await fetch('/api/parking/spots/available');
+        const spotsResponse = await fetch(`${API_BASE_URL}/api/parking/spots/available`);
         if (!spotsResponse.ok) {
           console.error('Failed to fetch spots:', spotsResponse.status);
           document.getElementById('availableSlots').textContent = '0';
@@ -90,7 +97,7 @@
 
       // Load user bookings
       try {
-        const bookingsResponse = await fetch(`/api/reservations/user/${userId}`);
+        const bookingsResponse = await fetch(`${API_BASE_URL}/api/reservations/user/${userId}`);
         
         if (!bookingsResponse.ok) {
           console.error('Failed to fetch bookings:', bookingsResponse.status);
@@ -134,7 +141,7 @@
 
     async function checkSpots() {
       try {
-        const response = await fetch('/api/parking/spots');
+        const response = await fetch(`${API_BASE_URL}/api/parking/spots`);
         const spots = await response.json();
         const available = spots.filter(s => !s.reserved).length;
         alert(`Available parking spaces: ${available} out of ${spots.length}`);
