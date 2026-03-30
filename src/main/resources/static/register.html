@@ -43,14 +43,41 @@
 
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Collect and trim values
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      // Client-side validation
+      if (!username) {
+        messageDiv.innerHTML = '<div class="message error">Username is required</div>';
+        return;
+      }
+      if (!email) {
+        messageDiv.innerHTML = '<div class="message error">Email is required</div>';
+        return;
+      }
+      if (!password) {
+        messageDiv.innerHTML = '<div class="message error">Password is required</div>';
+        return;
+      }
+      if (password.length < 4) {
+        messageDiv.innerHTML = '<div class="message error">Password must be at least 4 characters</div>';
+        return;
+      }
+      
       const user = {
-        username: document.getElementById('username').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        password: document.getElementById('password').value,
+        username: username,
+        email: email,
+        phone: phone,
+        password: password,
         role: 'USER'
       };
 
+      messageDiv.innerHTML = '<div class="message info">Creating account...</div>';
+      
       try {
         const response = await fetch('/api/auth/register', {
           method: 'POST',
@@ -59,13 +86,14 @@
         });
         const data = await response.json();
         if (data.success) {
-          messageDiv.innerHTML = '<div class="message success">Registration successful. Redirecting...</div>';
+          messageDiv.innerHTML = '<div class="message success">Registration successful! Redirecting to login...</div>';
           setTimeout(() => window.location.href = 'login.html', 2000);
         } else {
-          messageDiv.innerHTML = '<div class="message error">' + data.message + '</div>';
+          messageDiv.innerHTML = '<div class="message error">' + (data.message || 'Registration failed') + '</div>';
         }
       } catch (error) {
-        messageDiv.innerHTML = '<div class="message error">Connection error</div>';
+        messageDiv.innerHTML = '<div class="message error">Connection error: ' + error.message + '</div>';
+        console.error('Registration error:', error);
       }
     });
 

@@ -76,16 +76,36 @@
       // Load available spots
       try {
         const spotsResponse = await fetch('/api/parking/spots/available');
+        if (!spotsResponse.ok) {
+          console.error('Failed to fetch spots:', spotsResponse.status);
+          document.getElementById('availableSlots').textContent = '0';
+          return;
+        }
         const spots = await spotsResponse.json();
-        document.getElementById('availableSlots').textContent = spots.length;
+        document.getElementById('availableSlots').textContent = Array.isArray(spots) ? spots.length : 0;
       } catch(e) {
-        console.error(e);
+        console.error('Error loading spots:', e);
+        document.getElementById('availableSlots').textContent = '0';
       }
 
       // Load user bookings
       try {
         const bookingsResponse = await fetch(`/api/reservations/user/${userId}`);
+        
+        if (!bookingsResponse.ok) {
+          console.error('Failed to fetch bookings:', bookingsResponse.status);
+          document.getElementById('bookingsList').innerHTML = '<li class="list-item">Unable to load bookings.</li>';
+          return;
+        }
+        
         const bookings = await bookingsResponse.json();
+        
+        // Ensure bookings is an array
+        if (!Array.isArray(bookings)) {
+          console.error('Invalid bookings response format:', bookings);
+          document.getElementById('bookingsList').innerHTML = '<li class="list-item">Invalid bookings data.</li>';
+          return;
+        }
         
         const bookingsList = document.getElementById('bookingsList');
         bookingsList.innerHTML = '';
@@ -107,7 +127,8 @@
           document.getElementById('totalSpent').textContent = '$' + bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0).toFixed(2);
         }
       } catch(e) {
-        console.error(e);
+        console.error('Error loading bookings:', e);
+        document.getElementById('bookingsList').innerHTML = '<li class="list-item">Error loading bookings.</li>';
       }
     }
 

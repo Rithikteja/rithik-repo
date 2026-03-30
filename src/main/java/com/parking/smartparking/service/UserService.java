@@ -39,6 +39,7 @@ public class UserService {
         if (existing != null) {
             existing.setUsername(user.getUsername());
             existing.setEmail(user.getEmail());
+            existing.setPassword(user.getPassword());
             existing.setPhone(user.getPhone());
             existing.setVerified(user.getVerified());
             return repo.save(existing);

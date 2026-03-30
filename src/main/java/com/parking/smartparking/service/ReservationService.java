@@ -57,6 +57,18 @@ public class ReservationService {
         return null;
     }
 
+    public Reservation markPaymentAsPaid(Long id) {
+        Reservation reservation = reservationRepo.findById(id).orElse(null);
+        if (reservation != null) {
+            reservation.setPaymentStatus("PAID");
+            // Move paid reservations to completed state so UI tabs remain consistent.
+            reservation.setStatus("COMPLETED");
+            reservation.setUpdatedAt(LocalDateTime.now());
+            return reservationRepo.save(reservation);
+        }
+        return null;
+    }
+
     public Reservation updateReservation(Long id, Reservation reservation) {
         Reservation existing = reservationRepo.findById(id).orElse(null);
         if (existing != null) {

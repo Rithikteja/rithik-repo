@@ -65,4 +65,28 @@ public class ReservationController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<?> markPaymentPaid(@PathVariable Long id) {
+        try {
+            Reservation updated = reservationService.markPaymentAsPaid(id);
+            if (updated == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Reservation not found");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Payment completed successfully");
+            response.put("reservation", updated);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Payment update failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 }

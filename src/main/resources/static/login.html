@@ -35,9 +35,21 @@
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      // Client-side validation
+      if (!username) {
+        messageDiv.innerHTML = '<div class="message error">Username is required</div>';
+        return;
+      }
+      if (!password) {
+        messageDiv.innerHTML = '<div class="message error">Password is required</div>';
+        return;
+      }
 
+      messageDiv.innerHTML = '<div class="message info">Signing in...</div>';
+      
       try {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
@@ -45,15 +57,17 @@
           body: JSON.stringify({ username, password })
         });
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.user) {
           sessionStorage.setItem('userId', data.user.id);
           sessionStorage.setItem('username', data.user.username);
-          window.location.href = 'dashboard.html';
+          messageDiv.innerHTML = '<div class="message success">Login successful! Redirecting...</div>';
+          setTimeout(() => window.location.href = 'dashboard.html', 1000);
         } else {
-          messageDiv.innerHTML = '<div class="message error">' + data.message + '</div>';
+          messageDiv.innerHTML = '<div class="message error">' + (data.message || 'Invalid username or password') + '</div>';
         }
       } catch (error) {
-        messageDiv.innerHTML = '<div class="message error">Connection error</div>';
+        messageDiv.innerHTML = '<div class="message error">Connection error: ' + error.message + '</div>';
+        console.error('Login error:', error);
       }
     });
 
