@@ -1,6 +1,4 @@
 {
-  "buildCommand": "echo 'Frontend deployment'",
-  "outputDirectory": "src/main/resources/static",
   "cleanUrls": true,
   "headers": [
     {
