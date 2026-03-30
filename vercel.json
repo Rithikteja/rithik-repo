@@ -9,8 +9,5 @@
         { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
     }
-  ],
-  "env": {
-    "REACT_APP_API_URL": "@api_url"
-  }
+  ]
 }
