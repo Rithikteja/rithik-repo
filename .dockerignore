@@ -1,0 +1,54 @@
+# Maven
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Git
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build/Deploy
+build/
+dist/
+node_modules/
+
+# Documentation
+README.md
+HELP.md
+DEPLOYMENT_GUIDE.md
+QUICK_DEPLOY.md
+*.md
+
+# Scripts
+update-api-url.bat
+*.bat
+*.sh
+
+# Config files (not needed in Docker)
+render.yaml
+vercel.json
+.env
+.env.local
+
+# Misc
+*.log
+*.jar.original
