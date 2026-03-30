@@ -1,4 +1,5 @@
 {
+  "buildCommand": "echo Static frontend - no build step",
   "outputDirectory": ".",
   "cleanUrls": true,
   "headers": [
