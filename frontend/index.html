@@ -7,6 +7,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+    <script>
+      window.addEventListener('unhandledrejection', function (event) {
+        try {
+          var reason = event && event.reason;
+          var message = reason && reason.message ? reason.message : String(reason || 'Unknown promise rejection');
+          console.error('Unhandled promise rejection (pre-app):', message, reason);
+        } catch (e) {
+          console.error('Unhandled promise rejection (pre-app).');
+        }
+        event.preventDefault();
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
