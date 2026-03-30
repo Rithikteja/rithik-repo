@@ -5,14 +5,31 @@ const defaultBase =
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultBase;
 
+function normalizeError(error, fallbackMessage) {
+  if (!error) return new Error(fallbackMessage);
+  if (error instanceof Error) return error;
+  if (typeof error === "string") return new Error(error);
+  if (typeof error === "object" && error.message) return new Error(error.message);
+  try {
+    return new Error(`${fallbackMessage}: ${JSON.stringify(error)}`);
+  } catch (e) {
+    return new Error(fallbackMessage);
+  }
+}
+
 export async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  } catch (error) {
+    throw normalizeError(error, "Network request failed");
+  }
 
   const text = await response.text();
   let data = null;
