@@ -29,9 +29,5 @@ USER appuser
 # Expose port (Render will set the PORT environment variable)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/api/parking/spots || exit 1
-
-# Run the application with dynamic port
-CMD ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]
+# Run the application with dynamic port and explicit host binding for Render
+CMD ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080} --server.address=0.0.0.0"]
