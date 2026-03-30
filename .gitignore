@@ -10,6 +10,10 @@ target/
 .env.*.local
 .env.render
 
+### Node ###
+node_modules/
+frontend/dist/
+
 ### STS ###
 .apt_generated
 .classpath
